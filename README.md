@@ -449,3 +449,4 @@ Awesome DeFi apps you can deploy on Akash
 ### Web Frameworks
 
 - [NextJS](nextjs)
+- [React](react)
