@@ -1,0 +1,82 @@
+# Akash SDL for Ruby on Rails
+version: "2.0"
+services:
+  rails:
+    image: ruby:3.2
+    command: bash -c "bundle install && rails db:migrate && rails server -e production -b 0.0.0.0 -p 3000"
+    expose:
+      - port: 3000
+        as: 3000
+        to:
+          - global: true
+    env:
+      RAILS_ENV: production
+      DATABASE_URL: "sqlite3:/rails-data/db/production.sqlite3"
+      SECRET_KEY_BASE: "changeme"
+    depends_on:
+      - db
+    resources:
+      cpu:
+        units: 0.5
+      memory:
+        size: 1Gi
+      storage:
+        size: 2Gi
+    volumes:
+      - name: rails-data
+        path: /rails-data
+  db:
+    image: postgres:15
+    env:
+      POSTGRES_DB: rails_production
+      POSTGRES_USER: rails
+      POSTGRES_PASSWORD: rails_password
+    resources:
+      cpu:
+        units: 0.25
+      memory:
+        size: 512Mi
+      storage:
+        size: 2Gi
+    volumes:
+      - name: db-data
+        path: /var/lib/postgresql/data
+profiles:
+  compute:
+    rails:
+      resources:
+        cpu:
+          units: 0.5
+        memory:
+          size: 1Gi
+        storage:
+          size: 2Gi
+    db:
+      resources:
+        cpu:
+          units: 0.25
+        memory:
+          size: 512Mi
+        storage:
+          size: 2Gi
+  placement:
+    dcloud:
+      attributes:
+        host: akash
+      pricing:
+        rails:
+          denom: uakt
+          amount: 1000
+        db:
+          denom: uakt
+          amount: 500
+deployment:
+  rails:
+    dcloud:
+      profile: rails
+      count: 1
+  db:
+    dcloud:
+      profile: db
+      count: 1
+
