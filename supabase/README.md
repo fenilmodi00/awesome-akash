@@ -18,6 +18,28 @@ This template deploys [Supabase](https://supabase.com/), an open source Firebase
 - Akash account with funds
 - Akash CLI installed and configured
 
+### Security Configuration (Important)
+
+⚠️ **Before deploying:** You must edit the `deploy.yaml` file to replace the placeholder values with your own secure keys and secrets:
+
+1. Generate a JWT secret (at least 32 characters) for these fields:
+   - `PGRST_JWT_SECRET`
+   - `GOTRUE_JWT_SECRET`
+   - `JWT_SECRET`
+
+   You can generate a secure random string with:
+   ```bash
+   openssl rand -base64 32
+   ```
+
+2. Generate JWT tokens for Supabase authentication:
+   - For `SUPABASE_ANON_KEY` and `ANON_KEY`: Create an anonymous role JWT
+   - For `SUPABASE_SERVICE_KEY` and `SERVICE_KEY`: Create a service role JWT
+   
+   You can use the [jwt.io](https://jwt.io/) website with your JWT secret to create these tokens with the appropriate payloads.
+
+3. Consider changing the default database credentials for production use.
+
 ### Deploying on Akash
 
 1. Create a deployment with the provided SDL:
@@ -52,21 +74,7 @@ provider-services lease-status --dseq <DEPLOYMENT_ID> --provider <PROVIDER_ADDRE
 
 ## Access and Configuration
 
-Once deployed, you can access the Supabase Studio at the provided URI for the `studio` service. By default, the following credentials are available:
-
-- **Supabase Anon Key**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE`
-- **Supabase Service Key**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.knhOrPKq1GjejLQr7fuiRBFILwzKxrpxBvzYEJXKy8E`
-- **JWT Secret**: `super-secret-jwt-token-with-at-least-32-characters`
-
-⚠️ **Important Security Notice**: The deployment uses default keys and secrets for demonstration purposes. For production use, you should modify the `deploy.yaml` file to use your own secure keys and secrets.
-
-### Modifying Security Settings
-
-For a production deployment, you should change these values in the `deploy.yaml` file:
-
-1. `JWT_SECRET` and `PGRST_JWT_SECRET` - Generate a secure random string
-2. Database passwords
-3. Generate new anon and service keys
+Once deployed, you can access the Supabase Studio at the provided URI for the `studio` service. You'll need to use the keys you configured in the deployment YAML.
 
 ## Data Persistence
 
