@@ -3,201 +3,178 @@ version: "2.0"
 
 services:
   db:
-    image: supabase/postgres:15.1.0.73
+    image: supabase/postgres:15.1.0.147
     env:
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PASSWORD=Kx9mP2vL8nQ4rT6wY3jF5hB7dN1cV0sA9eR4tU8iO2pL6kM3nX7qZ5wE1rT9yU4i
       - POSTGRES_USER=postgres
       - POSTGRES_DB=postgres
-      - PGDATA=/var/lib/postgresql/data
     expose:
       - port: 5432
         to:
-          - service: studio
-          - service: api
-    params:
-      storage:
-        data:
-          mount: /var/lib/postgresql/data
-
-  api:
-    image: supabase/postgrest:v10.1.2
-    depends_on:
-      - db
-    env:
-      - PGRST_DB_URI=postgres://postgres:postgres@db:5432/postgres
-      - PGRST_DB_SCHEMAS=public
-      - PGRST_DB_ANON_ROLE=anon
-      - PGRST_JWT_SECRET=REPLACE_WITH_YOUR_OWN_RANDOM_SECRET
-      - PGRST_LOG_LEVEL=info
-    expose:
-      - port: 3000
-        to:
-          - service: studio
-          - service: gotrue
+          - service: kong
+          - service: auth
+          - service: rest
           - service: realtime
           - service: storage
           - service: meta
 
-  studio:
-    image: supabase/studio:20230223-400b5ff
-    depends_on:
-      - db
-      - api
-      - gotrue
-      - realtime
-      - storage
-      - meta
+  kong:
+    image: kong:2.8.1
     env:
-      - STUDIO_PG_META_URL=http://meta:8080
-      - POSTGRES_PASSWORD=postgres
-      - SUPABASE_URL=http://kong:8000
-      - SUPABASE_PUBLIC_URL=${AKASH_PUBLIC_ENDPOINT_URL_HTTP}
-      - SUPABASE_ANON_KEY=REPLACE_WITH_YOUR_OWN_ANON_KEY
-      - SUPABASE_SERVICE_KEY=REPLACE_WITH_YOUR_OWN_SERVICE_KEY
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/var/lib/kong/kong.yml
+      - KONG_DNS_ORDER=LAST,A,CNAME
+      - KONG_PLUGINS=request-transformer,cors,key-auth,acl
     expose:
-      - port: 3000
+      - port: 8000
         as: 80
         to:
           - global: true
 
-  gotrue:
-    image: supabase/gotrue:v2.41.0
-    depends_on:
-      - db
+  auth:
+    image: supabase/gotrue:v2.99.0
     env:
-      - API_EXTERNAL_URL=${AKASH_PUBLIC_ENDPOINT_URL_HTTP}
       - GOTRUE_API_HOST=0.0.0.0
       - GOTRUE_API_PORT=9999
       - GOTRUE_DB_DRIVER=postgres
-      - GOTRUE_DB_DATABASE_URL=postgres://postgres:postgres@db:5432/postgres
-      - GOTRUE_SITE_URL=${AKASH_PUBLIC_ENDPOINT_URL_HTTP}
+      - GOTRUE_DB_DATABASE_URL=postgres://supabase_auth_admin:Kx9mP2vL8nQ4rT6wY3jF5hB7dN1cV0sA9eR4tU8iO2pL6kM3nX7qZ5wE1rT9yU4i@db:5432/postgres
+      - GOTRUE_SITE_URL=http://localhost:3000
       - GOTRUE_URI_ALLOW_LIST=
       - GOTRUE_DISABLE_SIGNUP=false
-      - GOTRUE_JWT_SECRET=REPLACE_WITH_YOUR_OWN_RANDOM_SECRET
-      - GOTRUE_JWT_EXP=3600
+      - GOTRUE_JWT_ADMIN_ROLES=service_role
+      - GOTRUE_JWT_AUD=authenticated
       - GOTRUE_JWT_DEFAULT_GROUP_NAME=authenticated
-      - GOTRUE_EXTERNAL_EMAIL_ENABLED=false
+      - GOTRUE_JWT_EXP=3600
+      - GOTRUE_JWT_SECRET=H7kL9mN2pQ5rS8tV1wX4yA6bC3dE0fG9hI2jK5lM8nO1pR4sT7uV0wY3zA6bD9eF
+      - GOTRUE_EXTERNAL_EMAIL_ENABLED=true
       - GOTRUE_MAILER_AUTOCONFIRM=true
-      - GOTRUE_SMS_AUTOCONFIRM=true
     expose:
       - port: 9999
         to:
-          - service: studio
+          - service: kong
+
+  rest:
+    image: postgrest/postgrest:v11.2.2
+    env:
+      - PGRST_DB_URI=postgres://authenticator:Kx9mP2vL8nQ4rT6wY3jF5hB7dN1cV0sA9eR4tU8iO2pL6kM3nX7qZ5wE1rT9yU4i@db:5432/postgres
+      - PGRST_DB_SCHEMAS=public,storage,graphql_public
+      - PGRST_DB_ANON_ROLE=anon
+      - PGRST_JWT_SECRET=H7kL9mN2pQ5rS8tV1wX4yA6bC3dE0fG9hI2jK5lM8nO1pR4sT7uV0wY3zA6bD9eF
+      - PGRST_DB_USE_LEGACY_GUCS=false
+      - PGRST_APP_SETTINGS_JWT_SECRET=H7kL9mN2pQ5rS8tV1wX4yA6bC3dE0fG9hI2jK5lM8nO1pR4sT7uV0wY3zA6bD9eF
+      - PGRST_APP_SETTINGS_JWT_EXP=3600
+    expose:
+      - port: 3000
+        to:
           - service: kong
 
   realtime:
-    image: supabase/realtime:v2.1.0
-    depends_on:
-      - db
+    image: supabase/realtime:v2.25.50
     env:
+      - PORT=4000
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      - DB_USER=supabase_admin
+      - DB_PASSWORD=Kx9mP2vL8nQ4rT6wY3jF5hB7dN1cV0sA9eR4tU8iO2pL6kM3nX7qZ5wE1rT9yU4i
       - DB_NAME=postgres
       - DB_AFTER_CONNECT_QUERY=SET search_path TO _realtime
-      - PORT=4000
-      - JWT_SECRET=REPLACE_WITH_YOUR_OWN_RANDOM_SECRET
-      - SECURE_CHANNELS=false
-      - SLOT_NAME=supabase_realtime
-      - TEMPORARY_SLOT=true
-      - DB_SSL=false
+      - DB_ENC_KEY=supabaserealtime
+      - API_JWT_SECRET=H7kL9mN2pQ5rS8tV1wX4yA6bC3dE0fG9hI2jK5lM8nO1pR4sT7uV0wY3zA6bD9eF
+      - FLY_ALLOC_ID=fly123
+      - FLY_APP_NAME=realtime
+      - SECRET_KEY_BASE=UpNVntn3cDxHJpq99YMc1T1AQgQpc8kfYTuRgBiYa15BLrx8etQoXz3gZv1/u2oq
+      - ERL_AFLAGS=-proto_dist inet_tcp
+      - ENABLE_TAILSCALE=false
+      - DNS_NODES=
     expose:
       - port: 4000
         to:
-          - service: studio
           - service: kong
 
   storage:
-    image: supabase/storage-api:v0.28.0
-    depends_on:
-      - db
-      - api
+    image: supabase/storage-api:v0.43.11
     env:
-      - ANON_KEY=REPLACE_WITH_YOUR_OWN_ANON_KEY
-      - SERVICE_KEY=REPLACE_WITH_YOUR_OWN_SERVICE_KEY
-      - POSTGREST_URL=http://api:3000
-      - PGRST_JWT_SECRET=REPLACE_WITH_YOUR_OWN_RANDOM_SECRET
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/postgres
-      - PGOPTIONS=-c search_path=storage,public
-      - FILE_SIZE_LIMIT=50000000
+      - ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      - SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      - POSTGREST_URL=http://rest:3000
+      - PGRST_JWT_SECRET=H7kL9mN2pQ5rS8tV1wX4yA6bC3dE0fG9hI2jK5lM8nO1pR4sT7uV0wY3zA6bD9eF
+      - DATABASE_URL=postgres://supabase_storage_admin:Kx9mP2vL8nQ4rT6wY3jF5hB7dN1cV0sA9eR4tU8iO2pL6kM3nX7qZ5wE1rT9yU4i@db:5432/postgres
+      - FILE_SIZE_LIMIT=52428800
       - STORAGE_BACKEND=file
       - FILE_STORAGE_BACKEND_PATH=/var/lib/storage
       - TENANT_ID=stub
+      - REGION=stub
+      - GLOBAL_S3_BUCKET=stub
     expose:
       - port: 5000
         to:
-          - service: studio
           - service: kong
-    params:
-      storage:
-        storage-files:
-          mount: /var/lib/storage
 
   meta:
-    image: supabase/postgres-meta:v0.60.8
-    depends_on:
-      - db
+    image: supabase/postgres-meta:v0.68.0
     env:
       - PG_META_PORT=8080
       - PG_META_DB_HOST=db
-      - PG_META_DB_PASSWORD=postgres
       - PG_META_DB_PORT=5432
       - PG_META_DB_NAME=postgres
       - PG_META_DB_USER=postgres
+      - PG_META_DB_PASSWORD=Kx9mP2vL8nQ4rT6wY3jF5hB7dN1cV0sA9eR4tU8iO2pL6kM3nX7qZ5wE1rT9yU4i
     expose:
       - port: 8080
         to:
+          - service: kong
           - service: studio
 
-  kong:
-    image: kong:2.8.1
-    depends_on:
-      - api
-      - gotrue
-      - storage
-      - realtime
+  studio:
+    image: supabase/studio:20231123-64ebc87
     env:
-      - KONG_DATABASE=off
-      - KONG_DECLARATIVE_CONFIG=/kong.yml
+      - STUDIO_PG_META_URL=http://meta:8080
+      - POSTGRES_PASSWORD=Kx9mP2vL8nQ4rT6wY3jF5hB7dN1cV0sA9eR4tU8iO2pL6kM3nX7qZ5wE1rT9yU4i
+      - DEFAULT_ORGANIZATION_NAME=Akash Supabase
+      - DEFAULT_PROJECT_NAME=My Project
+      - SUPABASE_URL=http://kong:8000
+      - SUPABASE_PUBLIC_URL=https://REPLACE_WITH_YOUR_DEPLOYMENT_URL
+      - SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      - SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
     expose:
-      - port: 8000
+      - port: 3000
+        as: 3000
         to:
-          - service: studio
-    cmd:
-      - kong
-      - start
-      - -c
-      - /kong.yml
+          - global: true
 
 profiles:
   compute:
     db:
       resources:
         cpu:
-          units: 1.0
+          units: 2.0
         memory:
-          size: 2Gi
-      storage:
-        data:
-          size: 10Gi
-    api:
+          size: 4Gi
+        storage:
+          size: 20Gi
+    kong:
       resources:
         cpu:
           units: 0.5
         memory:
           size: 512Mi
-    studio:
+        storage:
+          size: 512Mi
+    auth:
       resources:
         cpu:
           units: 0.5
         memory:
           size: 512Mi
-    gotrue:
+        storage:
+          size: 512Mi
+    rest:
       resources:
         cpu:
           units: 0.5
         memory:
+          size: 512Mi
+        storage:
           size: 512Mi
     realtime:
       resources:
@@ -205,12 +182,14 @@ profiles:
           units: 0.5
         memory:
           size: 512Mi
+        storage:
+          size: 512Mi
     storage:
       resources:
         cpu:
           units: 0.5
         memory:
-          size: 512Mi
+          size: 1Gi
         storage:
           size: 10Gi
     meta:
@@ -219,74 +198,75 @@ profiles:
           units: 0.5
         memory:
           size: 512Mi
-    kong:
+        storage:
+          size: 512Mi
+    studio:
       resources:
         cpu:
           units: 0.5
         memory:
           size: 512Mi
+        storage:
+          size: 512Mi
+
   placement:
-    akash:
-      attributes:
-        host: akash
-      signedBy:
-        anyOf:
-          - akash1365yvmc4s7awdyj3n2sav7xfx76adc6dnmlx63
+    dcloud:
       pricing:
         db:
           denom: uakt
-          amount: 10000
-        api:
-          denom: uakt
-          amount: 5000
-        studio:
-          denom: uakt
-          amount: 5000
-        gotrue:
-          denom: uakt
-          amount: 5000
-        realtime:
-          denom: uakt
-          amount: 5000
-        storage:
-          denom: uakt
-          amount: 5000
-        meta:
-          denom: uakt
-          amount: 5000
+          amount: 1000
         kong:
           denom: uakt
-          amount: 5000
+          amount: 1000
+        auth:
+          denom: uakt
+          amount: 1000
+        rest:
+          denom: uakt
+          amount: 1000
+        realtime:
+          denom: uakt
+          amount: 1000
+        storage:
+          denom: uakt
+          amount: 1000
+        meta:
+          denom: uakt
+          amount: 1000
+        studio:
+          denom: uakt
+          amount: 1000
+
 deployment:
   db:
-    akash:
+    dcloud:
       profile: db
       count: 1
-  api:
-    akash:
-      profile: api
+  kong:
+    dcloud:
+      profile: kong
       count: 1
-  studio:
-    akash:
-      profile: studio
+  auth:
+    dcloud:
+      profile: auth
       count: 1
-  gotrue:
-    akash:
-      profile: gotrue
+  rest:
+    dcloud:
+      profile: rest
       count: 1
   realtime:
-    akash:
+    dcloud:
       profile: realtime
       count: 1
   storage:
-    akash:
+    dcloud:
       profile: storage
       count: 1
   meta:
-    akash:
+    dcloud:
       profile: meta
       count: 1
-  kong:
-    akash:
-      profile: kong
+  studio:
+    dcloud:
+      profile: studio
       count: 1
