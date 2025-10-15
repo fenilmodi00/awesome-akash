@@ -178,7 +178,8 @@ profiles:
           units: 1.0
         memory:
           size: 2Gi
-        storage:
+      storage:
+        data:
           size: 10Gi
     api:
       resources:
