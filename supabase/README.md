@@ -36,6 +36,8 @@ This template deploys [Supabase](https://supabase.com/), an open source Firebase
    - For `SUPABASE_ANON_KEY` and `ANON_KEY`: Create an anonymous role JWT
    - For `SUPABASE_SERVICE_KEY` and `SERVICE_KEY`: Create a service role JWT
    
+   **Important:** Both the anonymous and service tokens must be signed with the same `JWT_SECRET` you created in step 1.
+   
    You can use the [jwt.io](https://jwt.io/) website with your JWT secret to create these tokens with the appropriate payloads.
 
 3. Consider changing the default database credentials for production use.
@@ -72,9 +74,31 @@ provider-services send-manifest deploy.yaml --dseq <DEPLOYMENT_ID> --provider <P
 provider-services lease-status --dseq <DEPLOYMENT_ID> --provider <PROVIDER_ADDRESS> --from <YOUR_KEY_NAME>
 ```
 
+### Post-Deployment Configuration (Important)
+
+After deployment, you must update the following environment variables in your `deploy.yaml` file with your actual Akash ingress URL, then redeploy:
+
+- `PUBLIC_URL`: Set to `https://<deployment-id>.ingress.akash.network`
+- `SUPABASE_PUBLIC_URL`: Set to `https://<deployment-id>.ingress.akash.network`
+- `API_EXTERNAL_URL`: Set to `https://<deployment-id>.ingress.akash.network`
+- `GOTRUE_SITE_URL`: Set to `https://<deployment-id>.ingress.akash.network`
+
+Without this step, authentication and other features may not work properly.
+
 ## Access and Configuration
 
-Once deployed, you can access the Supabase Studio at the provided URI for the `studio` service. You'll need to use the keys you configured in the deployment YAML.
+Once deployed, you can access the Supabase Studio at:
+
+```
+https://<deployment-id>.ingress.akash.network
+```
+
+For example, if your deployment ID is `123456`, the URL would be:
+```
+https://123456.ingress.akash.network
+```
+
+You'll need to use the keys you configured in the deployment YAML for authentication.
 
 ## Data Persistence
 
