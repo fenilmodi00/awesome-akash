@@ -15,4 +15,6 @@
 - __Free & Open Source__: Apache 2.0 Licensed
 
 
-For more info, refer [chromadb](https://www.trychroma.com)
+For more info, refer 
+- [chromadb](https://www.trychroma.com)
+- [chromadb github](https://github.com/chroma-core/chroma)
